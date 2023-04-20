@@ -5,7 +5,7 @@ module "eks" {
   version = "18.26.6"
 
   cluster_name    = local.cluster_name
-  cluster_version = "1.25"
+  cluster_version = var.eks_cluster_version
 
 # Added two lines to prevent EKS module from creating and using its own IAM Role
 # This is due to restrictions on the AWS Event platform
@@ -32,7 +32,7 @@ module "eks" {
     one = {
       name = "node-group-1"
 
-      instance_types = ["t3.small"]
+      instance_types = ["t3.medium"]
 
       min_size     = 1
       max_size     = 3

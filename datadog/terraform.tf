@@ -22,10 +22,14 @@ data "terraform_remote_state" "k8s" {
   config = {
     organization = var.org_name
     workspaces = {
-      name = "Kubernetes_App"
+      name = "datadog_storedog"
     }
   }
 }
 
+provider "datadog" {
+  api_key = var.datadog_api_key
+  app_key = var.datadog_app_key
+}
 
 

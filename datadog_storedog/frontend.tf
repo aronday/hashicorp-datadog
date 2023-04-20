@@ -1,12 +1,15 @@
-resource "kubernetes_deployment" "deploy_frontend" {
+resource "kubernetes_deployment" "frontend" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
   metadata {
     labels = {
       "app"                    = "ecommerce"
-      "service"                = "frontend"
+      "service"                = "store-frontend"
       "tags.datadoghq.com/env" = "development"
     }
-    name      = "frontend"
-    namespace = "default"
+    name      = "store-frontend"
+    namespace = kubernetes_namespace.storedog.id
   }
   spec {
     replicas = 1
@@ -14,7 +17,7 @@ resource "kubernetes_deployment" "deploy_frontend" {
     selector {
       match_labels = {
         app     = "ecommerce"
-        service = "frontend"
+        service = "store-frontend"
       }
     }
     strategy {
@@ -29,7 +32,7 @@ resource "kubernetes_deployment" "deploy_frontend" {
       metadata {
         labels = {
           "app"                    = "ecommerce"
-          "service"                = "frontend"
+          "service"                = "store-frontend"
           "tags.datadoghq.com/env" = "development"
         }
       }
@@ -62,6 +65,15 @@ resource "kubernetes_deployment" "deploy_frontend" {
           }
 
           env {
+            name = "DD_SERVICE"
+            value_from {
+              field_ref {
+                field_path = "metadata.labels['tags.datadoghq.com/service']"
+              }
+            }
+          }
+          
+          env {
             name  = "DD_LOGS_INJECTION"
             value = true
           }
@@ -81,6 +93,26 @@ resource "kubernetes_deployment" "deploy_frontend" {
           }
 
           env {
+            name  = "DISCOUNTS_ROUTE"
+            value = "http://discounts"
+          }
+
+          env {
+            name  = "DISCOUNTS_PORT"
+            value = "5001"
+          }
+
+          env {
+            name  = "ADS_ROUTE"
+            value = "http://advertisements"
+          }
+
+          env {
+            name  = "ADS_PORT"
+            value = "5002"
+          }
+
+          env {
             name  = "DD_CLIENT_TOKEN"
             value = var.DD_CLIENT_TOKEN
           }
@@ -91,7 +123,7 @@ resource "kubernetes_deployment" "deploy_frontend" {
           }
 
 
-          image             = "ddtraining/storefront:latest"
+          image             = "public.ecr.aws/x2b9z2t7/ddtraining/storefront:latest"
           image_pull_policy = "Always"
           name              = "ecommerce-spree-observability"
           port {
@@ -114,18 +146,21 @@ resource "kubernetes_deployment" "deploy_frontend" {
 }
 
 resource "kubernetes_service" "frontend" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
   metadata {
-    name      = "frontend"
-    namespace = "storedog"
+    name      = "store-frontend"
+    namespace = kubernetes_namespace.storedog.id
     labels = {
       app     = "ecommerce"
-      service = "frontend"
+      service = "store-frontend"
     }
   }
   spec {
     selector = {
       app = "ecommerce"
-      service = "frontend"
+      service = "store-frontend"
     }
     port {
       port        = 80

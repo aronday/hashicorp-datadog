@@ -11,7 +11,7 @@ data "aws_availability_zones" "available" {}
 
 locals {
   # cluster_name = "datadog-webminar-${random_string.suffix.result}"
-  cluster_name = "datadog-webminar"
+  cluster_name = "datadog-x-hashicorp-workshop"
 }
 /*
 resource "random_string" "suffix" {

@@ -99,7 +99,7 @@ resource "kubernetes_manifest" "deployment_advertisements" {
                   "value" = "true"
                 },
               ]
-              "image" = "ddtraining/advertisements:latest"
+              "image" = "public.ecr.aws/x2b9z2t7/ddtraining/advertisements:latest"
               "name"  = "advertisements"
               "ports" = [
                 {

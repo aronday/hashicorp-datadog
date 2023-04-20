@@ -1,4 +1,4 @@
-resource "datadog_synthetics_test" "tfer--synthetics_r4s-j25-bv7" {
+resource "datadog_synthetics_test" "storedog_browser_test" {
   browser_step {
     allow_failure        = "false"
     force_element_update = "false"

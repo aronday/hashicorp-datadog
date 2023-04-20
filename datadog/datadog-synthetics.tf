@@ -1,30 +1,8 @@
-resource "datadog_synthetics_test" "beacon" {
-  type    = "api"
-  subtype = "http"
+##-----------------------------------------##
+##    Create Datadog Synthetics API  test    ##
+## ----------------------------------------##
 
-  request_definition {
-    method = "GET"
-    url    = data.terraform_remote_state.k8s.outputs.web_endpoint
-  }
-
-  assertion {
-    type     = "statusCode"
-    operator = "is"
-    target   = "200"
-  }
-
-  locations = ["aws:${var.aws_region}"]
-  options_list {
-    tick_every          = 900
-    min_location_failed = 1
-  }
-
-  name    = "beacon API Check"
-  message = "Oh no! Light from the beacon app is no longer shining!"
-  tags    = ["app:beacon", "env:demo"]
-
-  status = "live"
-}
+# Create a new Datadog Synthetics API test on storedog!
 
 resource "datadog_synthetics_test" "eCommerce" {
   type    = "api"
@@ -49,10 +27,16 @@ resource "datadog_synthetics_test" "eCommerce" {
 
   name    = "Checking eCommerce app via API"
   message = "eCommerce Application is not responding to GET requests"
-  tags    = ["app:ecommerce", "tags.datadoghq.com/env:development"]
+  tags    = ["app:ecommerce", "env:development", "service:store-frontend"]
 
   status = "live"
 }
+
+##---------------------------------------------##
+##    Create Datadog Synthetics Browser test    ##
+## --------------------------------------------##
+
+# Create a new Datadog Synthetics BrowserI test on storedog!
 
 resource "datadog_synthetics_test" "eCommerce_browser" {
   type    = "browser"
@@ -79,7 +63,7 @@ resource "datadog_synthetics_test" "eCommerce_browser" {
 
   name    = "Checking eCommerce app via browser"
   message = "eCommerce Application is not responding"
-  tags    = ["app:ecommerce", "tags.datadoghq.com/env:development"]
+  tags    = ["app:ecommerce", "env:development", "service:store-frontend"]
 
   status = "live"
 }

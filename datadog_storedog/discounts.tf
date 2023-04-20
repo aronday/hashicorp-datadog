@@ -1,146 +1,151 @@
-resource "kubernetes_manifest" "deployment_discounts" {
-  manifest = {
-    "apiVersion" = "apps/v1"
-    "kind"       = "Deployment"
-    "metadata" = {
-      "labels" = {
-        "app"                    = "ecommerce"
-        "service"                = "discounts"
-        "tags.datadoghq.com/env" = "development"
-      }
-      "name" = "discounts"
-      "namespace" = "storedog"
+resource "kubernetes_deployment" "discounts" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
+metadata {
+    labels = {
+      "app"                    = "ecommerce"
+      "service"                = "discounts"
+      "tags.datadoghq.com/env" = "development"
     }
-    "spec" = {
-      "replicas" = 1
-      "selector" = {
-        "matchLabels" = {
-          "app"     = "ecommerce"
-          "service" = "discounts"
+    name      = "discounts"
+    namespace = kubernetes_namespace.storedog.id
+  }
+spec {
+  replicas = 1
+
+    selector {
+      match_labels = {
+        app     = "ecommerce"
+        service = "discounts"
+      }
+    }
+    strategy {
+      rolling_update {
+        max_surge       = "25%"
+        max_unavailable = "25%"
+      }
+      type = "RollingUpdate"
+    }
+
+    template {
+      metadata {
+        labels = {
+          "app"                    = "ecommerce"
+          "service"                = "discounts"
+          "tags.datadoghq.com/env" = "development"
         }
       }
-      "strategy" = {}
-      "template" = {
-        "metadata" = {
-          "labels" = {
-            "app"                    = "ecommerce"
-            "service"                = "discounts"
-            "tags.datadoghq.com/env" = "development"
+
+      spec {
+        container {
+          args    = ["flask", "run", "--port=5001", "--host=0.0.0.0"]
+          command = ["ddtrace-run"]
+          env {
+            name  = "FLASK_APP"
+            value = "discounts.py"
           }
-        }
-        "spec" = {
-          "containers" = [
-            {
-              "args" = [
-                "flask",
-                "run",
-                "--port=5001",
-                "--host=0.0.0.0",
-              ]
-              "command" = [
-                "ddtrace-run",
-              ]
-              "env" = [
-                {
-                  "name"  = "FLASK_APP"
-                  "value" = "discounts.py"
-                },
-                {
-                  "name"  = "FLASK_DEBUG"
-                  "value" = "1"
-                },
-                {
-                  "name" = "POSTGRES_PASSWORD"
-                  "valueFrom" = {
-                    "secretKeyRef" = {
-                      "key"  = "pw"
-                      "name" = "db-password"
-                    }
-                  }
-                },
-                {
-                  "name"  = "POSTGRES_USER"
-                  "value" = "user"
-                },
-                {
-                  "name"  = "POSTGRES_HOST"
-                  "value" = "db"
-                },
-                {
-                  "name"  = "DATADOG_SERVICE_NAME"
-                  "value" = "discountsservice"
-                },
-                {
-                  "name" = "DD_AGENT_HOST"
-                  "valueFrom" = {
-                    "fieldRef" = {
-                      "fieldPath" = "status.hostIP"
-                    }
-                  }
-                },
-                {
-                  "name"  = "DD_LOGS_INJECTION"
-                  "value" = "true"
-                },
-                {
-                  "name"  = "DD_ANALYTICS_ENABLED"
-                  "value" = "true"
-                },
-                {
-                  "name"  = "DD_PROFILING_ENABLED"
-                  "value" = "true"
-                },
-                {
-                  "name" = "DD_ENV"
-                  "valueFrom" = {
-                    "fieldRef" = {
-                      "fieldPath" = "metadata.labels['tags.datadoghq.com/env']"
-                    }
-                  }
-                },
-              ]
-              "image" = "ddtraining/discounts:latest"
-              "name"  = "discounts"
-              "ports" = [
-                {
-                  "containerPort" = 5001
-                },
-              ]
-              "resources" = {}
-            },
-          ]
+          env {
+            name  = "FLASK_DEBUG"
+            value = "1"
+          }
+          env {
+            name = "POSTGRES_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = "db-password"
+                key  = "pw"
+              }
+            }
+          }
+          
+          env {
+            name  = "POSTGRES_USER"
+            value = "user"
+          }
+          
+          env {
+            name  = "POSTGRES_HOST"
+            value = "db"
+          }
+          
+          env {
+            name = "DD_SERVICE"
+            value_from {
+              field_ref {
+                field_path = "metadata.labels['tags.datadoghq.com/service']"
+              }
+            }
+          }
+          
+          env {
+            name = "DD_AGENT_HOST"
+            value_from {
+              field_ref {
+                field_path = "status.hostIP"
+              }
+            }
+          }
+          
+          env {
+            name  = "DD_LOGS_INJECTION"
+            value = true
+          }
+
+          env {
+            name = "DD_ENV"
+            value_from {
+              field_ref {
+                field_path = "metadata.labels['tags.datadoghq.com/env']"
+              }
+            }
+          }
+
+          env {
+            name  = "DD_ANALYTICS_ENABLED"
+            value = true
+          }
+          
+          env {
+            name  = "DD_PROFILING_ENABLED"
+            value = true
+          }
+
+          image             = "public.ecr.aws/x2b9z2t7/ddtraining/discounts:latest"
+          image_pull_policy = "Always"
+          name              = "discounts"
+          port {
+            container_port = 5001
+            protocol       = "TCP"
+          }
         }
       }
     }
   }
 }
 
-resource "kubernetes_manifest" "service_discounts" {
-  manifest = {
-    "apiVersion" = "v1"
-    "kind"       = "Service"
-    "metadata" = {
-      "labels" = {
-        "app"     = "ecommerce"
-        "service" = "discounts"
-      }
-      "name" = "discounts"
-      "namespace" = "storedog"
+resource "kubernetes_service" "discounts" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
+  metadata {
+    name      = "discounts"
+    namespace = kubernetes_namespace.storedog.id
+    labels = {
+      app     = "ecommerce"
+      service = "discounts"
     }
-    "spec" = {
-      "ports" = [
-        {
-          "port"       = 5001
-          "protocol"   = "TCP"
-          "targetPort" = 5001
-        },
-      ]
-      "selector" = {
-        "app"     = "ecommerce"
-        "service" = "discounts"
-      }
-      "sessionAffinity" = "None"
-      "type"            = "ClusterIP"
+  }
+  spec {
+    selector = {
+      app = "ecommerce"
+      service = "discounts"
     }
+    port {
+      port        = 5001
+      target_port = 5001
+    }
+      session_affinity = "None"
+      type = "ClusterIP"
   }
 }

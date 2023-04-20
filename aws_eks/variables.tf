@@ -6,6 +6,8 @@ variable "aws_region" {
 
 variable "vpc_name" {
   type = string
-  #default = "datadog-webminar"
-
+}
+variable "eks_cluster_version" {
+  type = string
+  default = "1.25"
 }

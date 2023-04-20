@@ -1,4 +1,4 @@
-resource "datadog_monitor" "tfer--monitor_103809464" {
+resource "datadog_monitor" "k8_pods_unhealty" {
   escalation_message = "Please investigate the eCommerce App, @operator"
   evaluation_delay   = "0"
   include_tags       = "true"
@@ -26,7 +26,7 @@ resource "datadog_monitor" "tfer--monitor_103809464" {
   type                 = "metric alert"
 }
 
-resource "datadog_monitor" "tfer--monitor_103959101" {
+resource "datadog_monitor" "discounts_service_error_rate" {
   escalation_message = ""
   evaluation_delay   = "0"
   include_tags       = "true"
@@ -54,7 +54,7 @@ resource "datadog_monitor" "tfer--monitor_103959101" {
   type                 = "query alert"
 }
 
-resource "datadog_monitor" "tfer--monitor_103959103" {
+resource "datadog_monitor" "discounts_service_latency" {
   escalation_message = ""
   evaluation_delay   = "0"
   include_tags       = "true"
@@ -82,7 +82,7 @@ resource "datadog_monitor" "tfer--monitor_103959103" {
   type                 = "metric alert"
 }
 
-resource "datadog_monitor" "tfer--monitor_103959107" {
+resource "datadog_monitor" "store_frontend_error_rate" {
   escalation_message = ""
   evaluation_delay   = "0"
   include_tags       = "true"
@@ -110,7 +110,7 @@ resource "datadog_monitor" "tfer--monitor_103959107" {
   type                 = "query alert"
 }
 
-resource "datadog_monitor" "tfer--monitor_103959108" {
+resource "datadog_monitor" "store_frontend_latency" {
   escalation_message = ""
   evaluation_delay   = "0"
   include_tags       = "true"
@@ -138,7 +138,7 @@ resource "datadog_monitor" "tfer--monitor_103959108" {
   type                 = "query alert"
 }
 
-resource "datadog_monitor" "tfer--monitor_103959109" {
+resource "datadog_monitor" "postgres_latency" {
   escalation_message = ""
   evaluation_delay   = "0"
   include_tags       = "true"
