@@ -10,7 +10,7 @@ module "eks" {
 # Added two lines to prevent EKS module from creating and using its own IAM Role
 # This is due to restrictions on the AWS Event platform
   create_iam_role = false
-  iam_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/EKS_Service_Role"
+  iam_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/EKS_Service_Role_CF"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
