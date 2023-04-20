@@ -8,7 +8,7 @@ module "eks" {
   cluster_version = "1.25"
 
   create_iam_role = false
-  iam_role_arn = "arn:aws:iam::${data.aws_caller_identity.account_id}:role/EKS_Service_Role"
+  iam_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/EKS_Service_Role"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
