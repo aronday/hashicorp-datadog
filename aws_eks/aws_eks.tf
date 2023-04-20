@@ -7,6 +7,8 @@ module "eks" {
   cluster_name    = local.cluster_name
   cluster_version = "1.25"
 
+# Added two lines to prevent EKS module from creating and using its own IAM Role
+# This is due to restrictions on the AWS Event platform
   create_iam_role = false
   iam_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/EKS_Service_Role"
 
