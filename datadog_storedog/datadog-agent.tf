@@ -14,7 +14,7 @@ resource "helm_release" "datadog_agent" {
   name       = "datadog-agent"
   chart      = "datadog"
   repository = "https://helm.datadoghq.com"
-  version    = "3.3.1"
+  version    = "3.25.5"
   namespace  = kubernetes_namespace.storedog.id
 
   set_sensitive {
@@ -78,7 +78,7 @@ resource "helm_release" "datadog_agent" {
   }
   set {
     name  = "datadog.clusterName"
-    value = "ecommerce"
+    value = "datadog-x-hashicorp-workshop"
   }
   set {
     name  = "datadog.apm.portEnabled"

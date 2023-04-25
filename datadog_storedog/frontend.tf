@@ -123,7 +123,7 @@ resource "kubernetes_deployment" "frontend" {
           }
 
 
-          image             = "public.ecr.aws/x2b9z2t7/ddtraining/storefront:latest"
+          image             = "public.ecr.aws/x2b9z2t7/ddtraining/storefront-fixed:2.2.1"
           image_pull_policy = "Always"
           name              = "ecommerce-spree-observability"
           port {
