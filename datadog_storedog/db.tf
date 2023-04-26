@@ -40,8 +40,10 @@ resource "kubernetes_persistent_volume" "db" {
       storage = "5Gi"
     }
     access_modes = ["ReadWriteOnce"]
-    host_path {
-      path = "/mnt/data"
+    persistent_volume_source {
+      host_path {
+        path = "/mnt/data"
+      }
     }
     persistent_volume_reclaim_policy = "Retain"
     storage_class_name = "manual"
