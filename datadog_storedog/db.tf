@@ -1,193 +1,185 @@
-resource "kubernetes_manifest" "serviceaccount_postgres" {
-  manifest = {
-    "apiVersion" = "v1"
-    "kind"       = "ServiceAccount"
-    "metadata" = {
-      "name" = "postgres"
-      "namespace" = "storedog"
-    }
+resource "kubernetes_service_account" "postgres" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
+  metadata {
+    name = "postgres"
+    namespace = kubernetes_namespace.storedog.id
   }
 }
 
-resource "kubernetes_manifest" "secret_db_password" {
-  manifest = {
-    "apiVersion" = "v1"
-    "data" = {
-      "pw" = "password"
+resource "kubernetes_secret" "db_password" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
+  metadata {
+    labels = {
+      "app"                    = "ecommerce"
+      "service"                = "db"
     }
-    "kind" = "Secret"
-    "metadata" = {
-      "labels" = {
-        "app"     = "ecommerce"
-        "service" = "db"
-      }
-      "name" = "db-password"
-      "namespace" = "storedog"
-      
+    name = "db-password"
+    namespace = kubernetes_namespace.storedog.id
+  }
+
+  data = {
+    pw = "password"
+  }
+
+  type = "Opaque"
+}
+
+resource "kubernetes_persistent_volume" "db" {
+  metadata {
+    labels = {
+      "type"                = "local"
     }
-    "type" = "Opaque"
+    name = "task-pv-volume"
+  }
+  spec {
+    capacity = {
+      storage = "5Gi"
+    }
+    access_modes = ["ReadWriteOnce"]
+    host_path {
+      path = "/mnt/data"
+    }
+    persistent_volume_reclaim_policy = "Retain"
+    storage_class_name = "manual"
   }
 }
 
-resource "kubernetes_manifest" "persistentvolume_task_pv_volume" {
-  manifest = {
-    "apiVersion" = "v1"
-    "kind"       = "PersistentVolume"
-    "metadata" = {
-      "labels" = {
-        "type" = "local"
+resource "kubernetes_persistent_volume_claim" "db" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
+  metadata {
+    name = "task-pvc-volume"
+    namespace = kubernetes_namespace.storedog.id
+  }
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    resources {
+      requests = {
+        storage = "5Gi"
       }
-      "name" = "task-pv-volume"
     }
-    "spec" = {
-      "accessModes" = [
-        "ReadWriteOnce",
-      ]
-      "capacity" = {
-        "storage" = "5Gi"
-      }
-      "hostPath" = {
-        "path" = "/mnt/data"
-      }
-      "persistentVolumeReclaimPolicy" = "Retain"
-      "storageClassName"              = "manual"
-    }
+    storage_class_name = "manual"
   }
 }
 
-resource "kubernetes_manifest" "persistentvolumeclaim_task_pvc_volume" {
-  manifest = {
-    "apiVersion" = "v1"
-    "kind"       = "PersistentVolumeClaim"
-    "metadata" = {
-      "name" = "task-pvc-volume"
-      "namespace" = "storedog"
+resource "kubernetes_deployment" "db" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
+  metadata {
+    labels = {
+      "app"                    = "ecommerce"
+      "service"                = "db"
+      "tags.datadoghq.com/env" = "development"
     }
-    "spec" = {
-      "accessModes" = [
-        "ReadWriteOnce",
-      ]
-      "resources" = {
-        "requests" = {
-          "storage" = "1Gi"
+    name      = "db"
+    namespace = kubernetes_namespace.storedog.id
+  }
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app     = "ecommerce"
+        service = "db"
+      }
+    }
+    strategy {
+      rolling_update {
+        max_surge       = "25%"
+        max_unavailable = "25%"
+      }
+      type = "RollingUpdate"
+    }
+
+    template {
+      metadata {
+        labels = {
+          "app"                    = "ecommerce"
+          "service"                = "db"
+          "tags.datadoghq.com/env" = "development"
         }
       }
-      "storageClassName" = "manual"
-    }
-  }
-}
 
-resource "kubernetes_manifest" "deployment_db" {
-  manifest = {
-    "apiVersion" = "apps/v1"
-    "kind"       = "Deployment"
-    "metadata" = {
-      "labels" = {
-        "app"     = "ecommerce"
-        "service" = "db"
-      }
-      "name" = "db"
-      "namespace" = "storedog"
-    }
-    "spec" = {
-      "replicas" = 1
-      "selector" = {
-        "matchLabels" = {
-          "app"     = "ecommerce"
-          "service" = "db"
-        }
-      }
-      "strategy" = {}
-      "template" = {
-        "metadata" = {
-          "labels" = {
-            "app"     = "ecommerce"
-            "service" = "db"
+      spec {
+        container {
+          env {
+            name  = "POSTGRES_USER"
+            value = "user"
+          }
+
+          env {
+            name = "POSTGRES_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = "db-password"
+                key  = "pw"
+              }
+            }
+          }
+          
+          env {
+            name  = "PGDATA"
+            value = "/var/lib/postgresql/data/mydata"
+          }
+
+          image             = "postgres:11-alpine"
+          image_pull_policy = "Always"
+          name              = "postgres"
+          port {
+            container_port = 5432
+            protocol       = "TCP"
+          }
+
+          resources {}
+          security_context {
+            privileged = true
+          }
+          volume_mount {
+            mount_path = "/var/lib/postgresql/data"
+            name = "postgresdb"
           }
         }
-        "spec" = {
-          "containers" = [
-            {
-              "env" = [
-                {
-                  "name" = "POSTGRES_PASSWORD"
-                  "valueFrom" = {
-                    "secretKeyRef" = {
-                      "key"  = "pw"
-                      "name" = "db-password"
-                    }
-                  }
-                },
-                {
-                  "name"  = "POSTGRES_USER"
-                  "value" = "user"
-                },
-                {
-                  "name"  = "PGDATA"
-                  "value" = "/var/lib/postgresql/data/mydata"
-                },
-              ]
-              "image" = "postgres:11-alpine"
-              "name"  = "postgres"
-              "ports" = [
-                {
-                  "containerPort" = 5432
-                },
-              ]
-              "resources" = {}
-              "securityContext" = {
-                "privileged" = true
-              }
-              "volumeMounts" = [
-                {
-                  "mountPath" = "/var/lib/postgresql/data"
-                  "name"      = "postgresdb"
-                },
-              ]
-            },
-          ]
-          "serviceAccountName" = "postgres"
-          "volumes" = [
-            {
-              "name" = "postgresdb"
-              "persistentVolumeClaim" = {
-                "claimName" = "task-pvc-volume"
-              }
-            },
-          ]
+        service_account_name = "postgres"
+        volume {
+          name = "postgresdb"
+          persistent_volume_claim {
+            claim_name = "task-pvc-volume"
+          }
         }
       }
     }
   }
 }
 
-resource "kubernetes_manifest" "service_db" {
-  manifest = {
-    "apiVersion" = "v1"
-    "kind"       = "Service"
-    "metadata" = {
-      "labels" = {
-        "app"     = "ecommerce"
-        "service" = "db"
-      }
-      "name" = "db"
-      "namespace" = "storedog"
+resource "kubernetes_service" "db" {
+  depends_on = [
+    kubernetes_namespace.storedog
+  ]
+  metadata {
+    name      = "db"
+    namespace = kubernetes_namespace.storedog.id
+    labels = {
+      app     = "ecommerce"
+      service = "db"
     }
-    "spec" = {
-      "ports" = [
-        {
-          "port"       = 5432
-          "protocol"   = "TCP"
-          "targetPort" = 5432
-        },
-      ]
-      "selector" = {
-        "app"     = "ecommerce"
-        "service" = "db"
-      }
+  }
+  spec {
+    selector = {
+      app = "ecommerce"
+      service = "db"
     }
-/*     "status" = {
-      "loadBalancer" = {}
-    } */
+    port {
+      port        = 5432
+      target_port = 5432
+    }
+    #Unsure if we need this
+      # session_affinity = "None"
+      # type = "ClusterIP"
   }
 }
